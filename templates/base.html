@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data-Driven Machine Learning Recommender for Mechanical Material Selection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <h1>Data-Driven Machine Learning Recommender for Mechanical Material Selection</h1>
+    <p>Implements classification and nearest-neighbor algorithms to recommend optimal engineering alloys based on design
+       constraints including yield strength, tensile strength, Young's modulus, and density.</p>
+    <p class="extra"><b>Extra module:</b> heat-treatment recommender &ndash; give a material and the properties you want, get the heat treatment to try.</p>
+    <nav>
+      {% for key, label, endpoint in [('overview','Overview','overview'),('analysis','Data analysis','analysis'),('select','Material selection','select'),('heat','Heat treatment recommender','heat'),('data','Data &amp; files','data')] %}
+      <a href="{{ url_for(endpoint) }}" class="{{ 'on' if page == key }}">{{ label|safe }}</a>
+      {% endfor %}
+      <span class="modepill {{ mode_css }}">{{ mode_tag }}</span>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="banner {{ banner.level }}"><b>{{ banner.title }}.</b> {{ banner.text }}</div>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="wrap">Version {{ version }} &middot; data mode: {{ mode_tag.lower() }} &middot; loaded at {{ loaded }}
+  &middot; all values come from the files in <code>data/raw</code>; the program adds none.</footer>
+</body>
+</html>

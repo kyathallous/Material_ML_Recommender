@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card"><h2>What the data can and cannot do</h2>
+  <p class="muted">Share of records with a value for each column. Green = well covered, amber = partial, red = sparse.</p>{{ coverage|safe }}</section>
+<section class="grid2">
+  <div class="card"><h2>Yield strength by family</h2>{% if box %}{{ box|safe }}{% else %}<p class="muted">Needs 3+ records in a family.</p>{% endif %}</div>
+  <div class="card"><h2>Correlations</h2>{% if corr %}{{ corr|safe }}{% else %}<p class="muted">Needs at least 3 numeric columns with data.</p>{% endif %}</div>
+</section>
+<section class="grid2">
+  <div class="card"><h2>Carbon vs yield strength</h2>{% if carbon_ys %}{{ carbon_ys|safe }}{% else %}<p class="muted">Needs carbon and yield strength.</p>{% endif %}</div>
+  <div class="card"><h2>Carbon vs tensile strength</h2>{% if carbon_uts %}{{ carbon_uts|safe }}{% else %}<p class="muted">Needs carbon and tensile strength.</p>{% endif %}</div>
+</section>
+{% endblock %}

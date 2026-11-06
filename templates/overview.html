@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pill, num %}
+{% block content %}
+<section class="grid4">
+  <div class="card stat"><span>{{ stats.rows }}</span>records</div>
+  <div class="card stat"><span>{{ stats.materials }}</span>distinct materials</div>
+  <div class="card stat"><span>{{ stats.families }}</span>material families</div>
+  <div class="card stat"><span>{{ stats.files }}</span>data files</div>
+</section>
+
+<section class="card">
+  <h2>What kind of data is this?</h2>
+  <div class="provbar">{{ prov_chart|safe }}</div>
+  <p>{% for label, n in prov.items() %}{{ pill(label) }} {{ n }} rows &nbsp; {% endfor %}</p>
+  <p class="muted"><b>Experimental (published)</b> = the file is listed in <code>data/raw/sources.csv</code> with its publication.
+     <b>Reference data</b> = typical or specified values from a named database or handbook (not experiments). <b>Secondary data</b> = taken from a repository such as Kaggle, original source not stated.
+     No row is AI-generated, and nothing is filled in.</p>
+</section>
+
+<section class="grid2">
+  <div class="card"><h2>Strength map</h2>
+    {% if strength %}{{ strength|safe }}{% else %}<p class="muted">Needs yield and tensile strength in the data.</p>{% endif %}</div>
+  <div class="card"><h2>Stiffness vs density (Ashby chart)</h2>
+    {% if ashby %}{{ ashby|safe }}{% else %}<p class="muted">Not available: no Young's modulus / density measurements in the data yet.
+      See <a href="{{ url_for('data') }}">Data &amp; files</a> to add a cited reference table.</p>{% endif %}</div>
+</section>
+
+<section class="grid2">
+  <div class="card"><h2>Machine learning 1 &ndash; material family classifier</h2>
+    {% if cv %}
+      <table><tr><th>Model</th><th>Cross-validation accuracy</th></tr>
+      {% for name, score in cv.items() %}<tr><td>{{ name }}{% if name == best %} <span class="chip">used</span>{% endif %}</td><td>{{ '%.1f' | format(score*100) }} %</td></tr>{% endfor %}</table>
+      <p class="muted">Predicts the family (carbon / low-alloy / stainless ...) from the measured properties. Families here are derived from composition rules.</p>
+    {% else %}<p class="muted">{{ notice }}</p>{% endif %}
+  </div>
+  <div class="card"><h2>Machine learning 2 &ndash; heat-treatment models</h2>
+    {% if ht_metrics %}
+      <table><tr><th>Property</th><th>R² (new steels)</th><th>MAE</th><th>n</th></tr>
+      {% for t, m in ht_metrics.items() %}<tr><td>{{ PROP_LABEL[t] }}</td><td>{{ '%.2f' | format(m.r2) }}</td><td>{{ '%.1f' | format(m.mae) }} {{ PROP_UNIT[t] }}</td><td>{{ m.n }}</td></tr>{% endfor %}</table>
+      <p class="muted">Cross-validated on steels the model has never seen (all rows of one composition are held out together). An honest measure of how far to trust the predictions on a new steel.</p>
+    {% else %}<p class="muted">{{ ht_error }}</p>{% endif %}
+  </div>
+</section>
+{% endblock %}

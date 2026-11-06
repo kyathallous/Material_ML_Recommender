@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pill, num %}
+{% block content %}
+{% if not sel.ready %}
+<section class="card"><h2>Material selection</h2><p>{{ sel.notice }}</p></section>
+{% else %}
+<section class="card">
+  <h2>1 &middot; Enter your design constraints</h2>
+  <p class="muted">Leave a box empty to ignore it. Properties available in this data:
+    <b>{% for p in sel.props %}{{ PROP_LABEL[p] }}{{ ', ' if not loop.last }}{% endfor %}</b>.</p>
+  {% if reference_only %}<p class="note info">{% for p in reference_only %}{{ PROP_LABEL[p] }}{{ ', ' if not loop.last }}{% endfor %}
+    come from <b>reference data</b> (typical values from a cited database, not experiments). Strength comes from experimental data where available;
+    every row shows its data label.</p>{% endif %}
+  {% if sel.missing %}<p class="note">Not in the loaded data (no measurements, so nothing is filled in):
+    {% for p in sel.missing %}{{ PROP_LABEL[p] }}{{ ', ' if not loop.last }}{% endfor %}. See <a href="{{ url_for('data') }}">Data &amp; files</a>.</p>{% endif %}
+  <form method="post" class="form">
+    {% for name, label, unit, key in fields %}
+    <label>{{ label }} <small>({{ unit }})</small><input name="{{ name }}" inputmode="decimal" value="{{ form.get(name, '') }}"></label>
+    {% endfor %}
+    <label>Material family
+      <select name="family"><option value="">All families</option>
+      {% for f in sel.families %}<option {{ 'selected' if form.get('family') == f }}>{{ f }}</option>{% endfor %}</select></label>
+    <label>Results <small>(how many)</small><input name="k" inputmode="numeric" value="{{ form.get('k', 5) }}"></label>
+    <label class="check"><input type="checkbox" name="experimental_only" value="1" {{ 'checked' if form.get('experimental_only') }}> Experimental rows only</label>
+    <button>Recommend materials</button>
+  </form>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <p class="muted small">How it works: (a) rows that break a hard limit are removed; (b) the remaining rows are ranked by distance to your
+    requirement with scikit-learn <i>NearestNeighbors</i> (log-scaled, standardised properties); (c) a {{ 'Random Forest' if not sel.best_name else sel.best_name }}
+    classifier shows which material family fits your numbers.</p>
+</section>
+
+{% if result %}
+<section class="card full">
+  <h2>2 &middot; {{ result.n }} recommendation{{ 's' if result.n != 1 }}</h2>
+  {% if not result.recs %}<p>No record meets every constraint{% if form.get('family') %} in {{ form.family }}{% endif %}. Relax one of them or choose "All families".</p>{% else %}
+  <div class="scroll"><table>
+    <tr><th>#</th><th>Material</th><th>Family</th><th>Composition (wt%)</th>
+      {% for p in sel.props %}<th>{{ PROP_LABEL[p] }}<br><small>{{ PROP_UNIT[p] }}</small></th>{% endfor %}
+      <th>Elongation<br><small>%</small></th><th>Margin over limits</th><th>Data label</th><th>Source</th></tr>
+    {% for r in result.recs %}
+    <tr><td>{{ loop.index }}</td><td><b>{{ r.material }}</b></td><td>{{ r.material_family }}</td><td class="small">{{ r.composition }}</td>
+      {% for p in sel.props %}<td>{{ num(r[p], 2 if p == 'density' else 0) }}</td>{% endfor %}
+      <td>{{ num(r.elongation, 1) }}</td>
+      <td class="small">{% for key, value in r.items() if key.startswith('margin_') and value == value %}{{ PROP_LABEL[key[7:]] }}: {{ '%+.0f' | format(value) }}%<br>{% endfor %}</td>
+      <td>{{ pill(r.data_type) }}</td><td class="small">{{ r.source[:80] }}{{ '…' if r.source|length > 80 }}</td></tr>
+    {% endfor %}
+  </table></div>
+  <p class="muted small">Margin = how far the material is above (or below, for density) your limit. A small margin means an efficient choice, not an over-specified one.</p>{% endif %}
+</section>
+<section class="grid2">
+  <div class="card"><h2>3 &middot; Classifier: likely family for this requirement</h2>
+    {% if result.family %}{{ result.family|safe }}{% else %}<p class="muted">{{ sel.notice or 'Not available for this data.' }}</p>{% endif %}</div>
+  <div class="card"><h2>Where the picks sit (rings)</h2>{% if result.strength %}{{ result.strength|safe }}{% endif %}
+    {% if result.ashby %}{{ result.ashby|safe }}{% endif %}</div>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

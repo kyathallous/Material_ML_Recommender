@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pill, num %}
+{% block content %}
+{% if not ht.ok %}
+<section class="card"><h2>Heat-treatment recommender</h2><p>{{ ht.error }}</p>
+  <p class="muted">It needs a file with chemical composition, heat-treatment temperatures and measured properties.
+     See <a href="{{ url_for('data') }}">Data &amp; files</a> for the dataset to add.</p></section>
+{% else %}
+<section class="card">
+  <h2>Which heat treatment gives the properties I need?</h2>
+  <p class="muted">Choose a material {% if ht.materials %}or{% else %}by typing{% endif %} its composition, then enter the properties you want (leave others empty).</p>
+  <form method="post" class="form">
+    {% if ht.materials %}
+    <label class="wide">Material grade
+      <select name="material"><option value="">&ndash; or type a composition below &ndash;</option>
+      {% for m in ht.materials %}<option {{ 'selected' if form.get('material') == m }}>{{ m }}</option>{% endfor %}</select></label>
+    {% endif %}
+    <fieldset class="wide"><legend>Composition (wt %)</legend>
+      {% for e in ht.comp_fields %}<label>{{ e }}<input name="c_{{ e }}" inputmode="decimal" value="{{ form.get('c_' ~ e, '') }}"></label>{% endfor %}
+    </fieldset>
+    <fieldset class="wide"><legend>Wanted properties</legend>
+      {% for t in ht.targets %}<label>{{ PROP_LABEL[t] }} <small>({{ PROP_UNIT[t] }})</small><input name="{{ t }}" inputmode="decimal" value="{{ form.get(t, '') }}"></label>{% endfor %}
+    </fieldset>
+    <label>Options <small>(how many)</small><input name="k" inputmode="numeric" value="{{ form.get('k', 4) }}"></label>
+    <button>Recommend heat treatment</button>
+  </form>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+</section>
+
+{% if result %}
+<section class="card full">
+  <h2>Recommended heat treatments for {{ result.label }}</h2>
+  {% for w in result.warnings %}<p class="note">⚠ {{ w }}</p>{% endfor %}
+  <div class="scroll"><table>
+    <tr><th>#</th><th>Heat treatment</th>{% for t in ht.targets %}<th>{{ PROP_LABEL[t] }}<br><small>predicted ± spread, {{ PROP_UNIT[t] }}</small></th>{% endfor %}<th>Miss</th></tr>
+    {% for r in result.rows %}
+    <tr><td>{{ loop.index }}</td><td><b>{{ r.treatment }}</b></td>
+      {% for t, value, spread in r.preds %}<td class="{{ 'hit' if t in result.targets }}">{{ num(value) }} <small class="muted">± {{ num(spread) }}</small></td>{% endfor %}
+      <td>{{ '%.2f' | format(r.match_error) }}</td></tr>
+    {% endfor %}
+  </table></div>
+  <p class="muted">These are machine-learning predictions, not guarantees. "Miss" = distance from your targets in standard deviations (lower is better); the ± is the disagreement between the model's trees.</p>
+</section>
+<section class="grid2">
+  <div class="card"><h2>{{ PROP_LABEL[result.prop] }} vs tempering temperature</h2>
+    {% if result.chart %}{{ result.chart|safe }}{% else %}<p class="muted">No tempering data to plot.</p>{% endif %}</div>
+  <div class="card"><h2>Closest real records (evidence)</h2>
+    <div class="scroll"><table>
+      <tr><th>Treatment recorded</th>{% for t in ht.targets %}<th>{{ PROP_LABEL[t] }}</th>{% endfor %}<th>Label</th></tr>
+      {% for r in result.evidence %}<tr><td class="small">{{ r.treatment }}</td>{% for t in ht.targets %}<td>{{ num(r[t]) }}</td>{% endfor %}<td>{{ pill(r.data_type) }}</td></tr>{% endfor %}
+    </table></div>
+    <p class="muted">Sources: {{ result.evidence | map(attribute='source') | unique | join('; ') }}</p>
+  </div>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

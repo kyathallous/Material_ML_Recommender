@@ -1,0 +1,7 @@
+{% macro pill(label) -%}
+<span class="pill {{ 'd-Experimental' if label.startswith('Experimental') else 'd-Reference' if label.startswith('Reference') else 'd-Unverified' }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro num(value, digits=0) -%}
+{%- if value is none or value != value %}<span class="muted">–</span>{% else %}{{ '%.*f' | format(digits, value) }}{% endif -%}
+{%- endmacro %}

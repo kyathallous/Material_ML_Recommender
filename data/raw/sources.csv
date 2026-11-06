@@ -1,0 +1,8 @@
+file,citation,kind,family,ignore_columns
+steel_strength.csv,"Mechanical properties of some steels; Citrine Informatics / Materials Data Facility, doi:10.18126/524z-vd6m (CC-BY 4.0); figshare 7250453",,,
+nims_fatigue.csv,"NIMS MatNavi steel fatigue data as published in Agrawal et al., Integrating Materials and Manufacturing Innovation 3:8 (2014), doi:10.1186/2193-9772-3-8",,,
+steelbench_core.csv,"SteelBench v1.0 (core file), Zenodo record 18530558 (CC BY 4.0); only rows tagged as measured are used",,,hardness
+tempering_hardness.csv,"Tempering data for carbon and low alloy steels, Kaggle (rgerschtzsauer), compiled from published literature; each row names its original publication",,,
+cu_alloys.csv,"Dataset of mechanical properties and electrical conductivity of copper-based alloys, Scientific Data 2023, doi:10.1038/s41597-023-02411-9; each record names its source paper",,Copper alloy,
+al_alloys.csv,"Aluminium alloy dataset for supervised learning, Bhat, Barnard and Birbilis, Mendeley Data b6br4yk6r3 (CC BY 4.0)",,Aluminium alloy,
+kaggle_materials.csv,"Autodesk material database (Inventor or Fusion material library), obtained from Kaggle: [dataset title], [author], [URL], accessed 29 Oct 2026",reference,,hardness

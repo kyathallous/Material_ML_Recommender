@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pill %}
+{% block content %}
+
+{% if info.mode == 'empty' %}
+<section class="card full">
+  <h2>Welcome &ndash; add your experimental data (3 steps)</h2>
+  <ol class="steps">
+    <li><b>Download</b> the files in the table below (free). Save each one with the exact name shown.</li>
+    <li><b>Copy</b> them into this folder: <code>{{ raw_dir }}</code></li>
+    <li><b>Press</b> <i>Reload data</i> (below). The pages unlock and the models train.</li>
+  </ol>
+</section>
+{% endif %}
+
+<section class="card full">
+  <h2>Datasets to download</h2>
+  <div class="scroll"><table>
+    <tr><th>Save as</th><th>What it gives</th><th>Where to get it</th><th>Citation</th></tr>
+    <tr><td><code>steel_strength.csv</code></td><td>312 steels: composition, yield, tensile, elongation</td>
+      <td><a href="https://figshare.com/articles/Steel_Strength_Data/7250453" target="_blank" rel="noopener">figshare 7250453</a> &ndash; choose the <b>DATASET</b> (csv) file, not the .GZ</td>
+      <td class="small">Citrine / Materials Data Facility, doi:10.18126/524z-vd6m (CC-BY 4.0)</td></tr>
+    <tr><td><code>nims_fatigue.csv</code></td><td>437 steels: composition, heat-treatment settings, fatigue strength &ndash; <b>feeds the heat-treatment module</b></td>
+      <td><a href="https://www.kaggle.com/datasets/chaozhuang/steel-fatigue-strength-prediction" target="_blank" rel="noopener">Kaggle: steel-fatigue-strength-prediction</a> (free login)</td>
+      <td class="small">Agrawal et al., Integr. Mater. Manuf. Innov. 3:8 (2014), <a href="https://doi.org/10.1186/2193-9772-3-8" target="_blank" rel="noopener">doi:10.1186/2193-9772-3-8</a></td></tr>
+    <tr><td><code>steelbench_core.csv</code></td><td>1,636 steels: composition, austenitize and temper temperatures, tensile, yield, elongation</td>
+      <td><a href="https://zenodo.org/records/18530558" target="_blank" rel="noopener">Zenodo 18530558</a> &ndash; download <code>steelbench_core_open.csv</code> and rename it. <b>Not</b> the "full" file (it contains filled-in values; the app rejects it).</td>
+      <td class="small">SteelBench v1.0, Zenodo 18530558 (CC BY 4.0)</td></tr>
+  </table></div>
+  <p class="muted">The three citations are already written in <code>data/raw/sources.csv</code>. A file is labelled <b>Experimental (published)</b> only if it is listed there.
+    None of these files contains Young's modulus, density or hardness. To add them, type a cited handbook table into <code>data/templates/reference_table_template.csv</code>,
+    save it in <code>data/raw</code> and list it in <code>sources.csv</code> with <code>kind</code> = <code>reference</code>.
+    It is then labelled <b>Reference data</b>, never "experimental". A file with <code>kind</code> = <code>secondary</code> is also used, but is always labelled <b>Secondary data</b>.</p>
+</section>
+
+<section class="card full">
+  <h2>Reload</h2>
+  <form method="post" action="{{ url_for('reload_data') }}"><button>Reload data</button>
+    <span class="muted">&nbsp; Reads <code>{{ raw_dir }}</code> again and retrains the models. Last load took {{ seconds }} s.</span></form>
+</section>
+
+{% if info.files %}
+<section class="card full">
+  <h2>Files found</h2>
+  <div class="scroll"><table>
+    <tr><th>File</th><th>Rows</th><th>Label</th><th>Status</th><th>Notes</th><th>Columns recognised</th><th>Columns ignored</th></tr>
+    {% for f in info.files %}
+    <tr><td><b>{{ f.name }}</b></td><td>{{ f.rows }}</td><td>{% if f.dtype %}{{ pill(f.dtype) }}{% endif %}</td>
+      <td>{{ '✔ used' if f.status == 'ok' else '✖ skipped' }}</td>
+      <td class="small">{% for n in f.notes %}{{ n }}{{ '; ' if not loop.last }}{% endfor %}</td>
+      <td class="small">{{ f.recognised | join(', ') }}</td><td class="small">{{ f.ignored | join(', ') }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% for w in info.warnings %}<p class="note">{{ w }}</p>{% endfor %}
+</section>
+
+<section class="card full">
+  <h2>What the models can use</h2>
+  <p><b>Material selection:</b> {% if sel.ready %}ready, using {% for p in sel.props %}{{ PROP_LABEL[p] }}{{ ', ' if not loop.last }}{% endfor %}.
+      {% if sel.missing %}Missing (no measurements): {% for p in sel.missing %}{{ PROP_LABEL[p] }}{{ ', ' if not loop.last }}{% endfor %}.{% endif %}{% else %}not ready &ndash; {{ sel.notice }}{% endif %}<br>
+     <b>Heat-treatment recommender:</b> {% if ht.ok %}ready for {% for t in ht.targets %}{{ PROP_LABEL[t] }}{{ ', ' if not loop.last }}{% endfor %}.{% else %}not ready &ndash; {{ ht.error }}{% endif %}</p>
+  <div class="scroll"><table>
+    <tr><th>Column</th><th>Rows with a value</th><th>%</th><th>Min</th><th>Max</th></tr>
+    {% for col, n, pct, lo, hi in coverage %}<tr><td>{{ col }}</td><td>{{ n }}</td><td>{{ pct }}%</td><td>{{ lo }}</td><td>{{ hi }}</td></tr>{% endfor %}
+  </table></div>
+  <p class="muted">Check the min/max values: they show whether units are right and whether placeholders were removed.</p>
+</section>
+
+<section class="card full">
+  <h2>Preview (first rows of each file)</h2>
+  <div class="scroll"><table>
+    <tr>{% for c in preview[0].keys() %}<th>{{ c }}</th>{% endfor %}</tr>
+    {% for r in preview %}<tr>{% for c, v in r.items() %}<td class="small">{% if c == 'data_type' %}{{ pill(v) }}{% elif v != v %}–{% else %}{{ v }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}
